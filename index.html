@@ -23,19 +23,23 @@
 
     <div id="msg">use arrow keys or WASD to move</div>
 
-    <!-- D-pad — touch devices only, hidden on desktop via CSS -->
-    <div id="dpad">
-      <div class="dpad-row">
-        <div class="dbtn" id="btn-up">▲</div>
+    <!-- Dual thumb controller — touch only, hidden on desktop -->
+    <div id="touch-controller">
+
+      <!-- Left half: up / left / down -->
+      <div class="half" id="half-left">
+        <div class="zone" id="zone-left-up">▲</div>
+        <div class="zone" id="zone-left-mid">◀</div>
+        <div class="zone" id="zone-left-down">▼</div>
       </div>
-      <div class="dpad-row">
-        <div class="dbtn" id="btn-left">◀</div>
-        <div class="dbtn empty"></div>
-        <div class="dbtn" id="btn-right">▶</div>
+
+      <!-- Right half: up / right / down -->
+      <div class="half" id="half-right">
+        <div class="zone" id="zone-right-up">▲</div>
+        <div class="zone" id="zone-right-mid">▶</div>
+        <div class="zone" id="zone-right-down">▼</div>
       </div>
-      <div class="dpad-row">
-        <div class="dbtn" id="btn-down">▼</div>
-      </div>
+
     </div>
 
     <div id="buttons">

@@ -35,7 +35,6 @@ body {
   font-weight: 600;
 }
 
-/* Canvas scales to fit screen width on mobile */
 #canvas {
   image-rendering: pixelated;
   border: 2px solid #aaa;
@@ -73,50 +72,47 @@ button:hover {
   background: #e8e7e2;
 }
 
-/* ─── D-pad — touch devices only ────────────────────────────── */
+/* ─── Dual thumb controller — hidden on desktop ──────────────── */
 
-#dpad {
+#touch-controller {
   display: none;
 }
 
-.dpad-row {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
+/* Show only on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  #touch-controller {
+    display: flex;
+    width: 100%;
+    height: 180px;
+    gap: 4px;
+  }
 }
 
-.dbtn {
-  width: 64px;
-  height: 64px;
+.half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.zone {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  border: 1px solid #aaa;
+  font-size: 20px;
+  color: #bbb;
+  background: #eeeee9;
   border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
+  border: 1px solid #ddd;
   user-select: none;
   -webkit-user-select: none;
+  cursor: pointer;
 }
 
-.dbtn:active {
+.zone:active {
   background: #e0dfd8;
-}
-
-.dbtn.empty {
-  visibility: hidden;
-}
-
-/* Show d-pad only on touch screens */
-@media (hover: none) and (pointer: coarse) {
-  #dpad {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-  }
+  color: #7F77DD;
 }
 
 /* ─── Score screen ───────────────────────────────────────────── */

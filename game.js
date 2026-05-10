@@ -217,6 +217,40 @@ function tryMove(dx, dy) {
   draw();
 }
 
+// ─── Dual thumb controller (iOS / touch) ─────────────────────
+// Left half: up / left / down
+// Right half: up / right / down
+
+function bindZone(id, dx, dy) {
+  const zone = document.getElementById(id);
+  let interval = null;
+
+  function start(e) {
+    e.preventDefault();
+    tryMove(dx, dy);
+    interval = setInterval(() => tryMove(dx, dy), MOVE_DELAY);
+  }
+
+  function stop(e) {
+    e.preventDefault();
+    clearInterval(interval);
+    interval = null;
+  }
+
+  zone.addEventListener('touchstart', start, { passive: false });
+  zone.addEventListener('touchend',   stop,  { passive: false });
+  zone.addEventListener('mousedown',  start);
+  zone.addEventListener('mouseup',    stop);
+  zone.addEventListener('mouseleave', stop);
+}
+
+bindZone('zone-left-up',    0, -1);  // left half top = up
+bindZone('zone-left-mid',  -1,  0);  // left half middle = left
+bindZone('zone-left-down',  0,  1);  // left half bottom = down
+bindZone('zone-right-up',   0, -1);  // right half top = up
+bindZone('zone-right-mid',  1,  0);  // right half middle = right
+bindZone('zone-right-down', 0,  1);  // right half bottom = down
+
 // ─── Input ────────────────────────────────────────────────────
 
 // Map each key to a direction as [dx, dy]
@@ -264,37 +298,6 @@ document.addEventListener('keyup', (e) => {
 
 // ─── Start ────────────────────────────────────────────────────
 
-// Kick everything off by loading the first level (index 0)
+// Build level select dropdown and kick off the game
 buildLevelSelect();
 loadLevel(0);
-
-
-// ─── D-pad (iOS / touch) ──────────────────────────────────────
-
-function bindDpad(id, dx, dy) {
-  const btn = document.getElementById(id);
-  let interval = null;
-
-  function start(e) {
-    e.preventDefault();
-    tryMove(dx, dy);
-    interval = setInterval(() => tryMove(dx, dy), MOVE_DELAY);
-  }
-
-  function stop(e) {
-    e.preventDefault();
-    clearInterval(interval);
-    interval = null;
-  }
-
-  btn.addEventListener('touchstart', start, { passive: false });
-  btn.addEventListener('touchend',   stop,  { passive: false });
-  btn.addEventListener('mousedown',  start);
-  btn.addEventListener('mouseup',    stop);
-  btn.addEventListener('mouseleave', stop);
-}
-
-bindDpad('btn-up',    0, -1);
-bindDpad('btn-down',  0,  1);
-bindDpad('btn-left', -1,  0);
-bindDpad('btn-right', 1,  0);

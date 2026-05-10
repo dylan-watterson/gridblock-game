@@ -23,23 +23,14 @@
 
     <div id="msg">use arrow keys or WASD to move</div>
 
-    <!-- Dual thumb controller — touch only, hidden on desktop -->
+    <!-- Touch controller — hidden on desktop, shown on iOS/touch -->
     <div id="touch-controller">
-
-      <!-- Left half: up / left / down -->
-      <div class="half" id="half-left">
-        <div class="zone" id="zone-left-up">▲</div>
-        <div class="zone" id="zone-left-mid">◀</div>
-        <div class="zone" id="zone-left-down">▼</div>
+      <div class="zone" id="zone-up">▲</div>
+      <div id="touch-middle">
+        <div class="zone" id="zone-left">◀</div>
+        <div class="zone" id="zone-right">▶</div>
       </div>
-
-      <!-- Right half: up / right / down -->
-      <div class="half" id="half-right">
-        <div class="zone" id="zone-right-up">▲</div>
-        <div class="zone" id="zone-right-mid">▶</div>
-        <div class="zone" id="zone-right-down">▼</div>
-      </div>
-
+      <div class="zone" id="zone-down">▼</div>
     </div>
 
     <div id="buttons">

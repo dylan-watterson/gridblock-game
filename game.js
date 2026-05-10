@@ -217,9 +217,8 @@ function tryMove(dx, dy) {
   draw();
 }
 
-// ─── Dual thumb controller (iOS / touch) ─────────────────────
-// Left half: up / left / down
-// Right half: up / right / down
+// ─── Touch controller (iOS) ───────────────────────────────────
+// One wide up zone, one wide down zone, left and right split in the middle
 
 function bindZone(id, dx, dy) {
   const zone = document.getElementById(id);
@@ -244,12 +243,10 @@ function bindZone(id, dx, dy) {
   zone.addEventListener('mouseleave', stop);
 }
 
-bindZone('zone-left-up',    0, -1);  // left half top = up
-bindZone('zone-left-mid',  -1,  0);  // left half middle = left
-bindZone('zone-left-down',  0,  1);  // left half bottom = down
-bindZone('zone-right-up',   0, -1);  // right half top = up
-bindZone('zone-right-mid',  1,  0);  // right half middle = right
-bindZone('zone-right-down', 0,  1);  // right half bottom = down
+bindZone('zone-up',    0, -1);  // full width top = up
+bindZone('zone-left', -1,  0);  // middle left = left
+bindZone('zone-right', 1,  0);  // middle right = right
+bindZone('zone-down',  0,  1);  // full width bottom = down
 
 // ─── Input ────────────────────────────────────────────────────
 

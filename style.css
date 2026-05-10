@@ -35,13 +35,27 @@ body {
   font-weight: 600;
 }
 
+/* Canvas — fixed size, never scaled via CSS */
 #canvas {
   image-rendering: pixelated;
   border: 2px solid #aaa;
-  width: 100%;
-  max-width: 500px;
-  height: auto;
   display: block;
+  /* width/height controlled by canvas attributes only, not CSS */
+}
+
+/* On small screens, scale canvas down proportionally using transform */
+@media (max-width: 520px) {
+  #canvas-wrap {
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+  }
+
+  #canvas {
+    transform-origin: top center;
+    transform: scale(var(--canvas-scale, 1));
+  }
 }
 
 #msg {
@@ -76,17 +90,10 @@ button:hover {
 
 #touch-controller {
   display: none;
-}
-
-/* Show only on touch screens */
-@media (hover: none) and (pointer: coarse) {
-  #touch-controller {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 200px;
-    gap: 2px;
-  }
+  width: 100%;
+  height: 200px;
+  flex-direction: column;
+  gap: 2px;
 }
 
 #touch-middle {
@@ -108,11 +115,19 @@ button:hover {
   user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .zone:active {
   background: #e0dfd8;
   color: #7F77DD;
+}
+
+/* Show controller only on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  #touch-controller {
+    display: flex;
+  }
 }
 
 /* ─── Score screen ───────────────────────────────────────────── */

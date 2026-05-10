@@ -217,37 +217,6 @@ function tryMove(dx, dy) {
   draw();
 }
 
-// ─── Touch controller (iOS) ───────────────────────────────────
-// One wide up zone, one wide down zone, left and right split in the middle
-
-function bindZone(id, dx, dy) {
-  const zone = document.getElementById(id);
-  let interval = null;
-
-  function start(e) {
-    e.preventDefault();
-    tryMove(dx, dy);
-    interval = setInterval(() => tryMove(dx, dy), MOVE_DELAY);
-  }
-
-  function stop(e) {
-    e.preventDefault();
-    clearInterval(interval);
-    interval = null;
-  }
-
-  zone.addEventListener('touchstart', start, { passive: false });
-  zone.addEventListener('touchend',   stop,  { passive: false });
-  zone.addEventListener('mousedown',  start);
-  zone.addEventListener('mouseup',    stop);
-  zone.addEventListener('mouseleave', stop);
-}
-
-bindZone('zone-up',    0, -1);  // full width top = up
-bindZone('zone-left', -1,  0);  // middle left = left
-bindZone('zone-right', 1,  0);  // middle right = right
-bindZone('zone-down',  0,  1);  // full width bottom = down
-
 // ─── Input ────────────────────────────────────────────────────
 
 // Map each key to a direction as [dx, dy]
@@ -293,8 +262,39 @@ document.addEventListener('keyup', (e) => {
   if (e.key === heldKey) stopMoving();
 });
 
+// ─── Touch controller (iOS) ───────────────────────────────────
+// Full width up/down, split left/right in the middle
+
+function bindZone(id, dx, dy) {
+  const zone = document.getElementById(id);
+  let interval = null;
+
+  function start(e) {
+    e.preventDefault();
+    tryMove(dx, dy);
+    interval = setInterval(() => tryMove(dx, dy), MOVE_DELAY);
+  }
+
+  function stop(e) {
+    e.preventDefault();
+    clearInterval(interval);
+    interval = null;
+  }
+
+  zone.addEventListener('touchstart', start, { passive: false });
+  zone.addEventListener('touchend',   stop,  { passive: false });
+  zone.addEventListener('mousedown',  start);
+  zone.addEventListener('mouseup',    stop);
+  zone.addEventListener('mouseleave', stop);
+}
+
+bindZone('zone-up',    0, -1);
+bindZone('zone-left', -1,  0);
+bindZone('zone-right', 1,  0);
+bindZone('zone-down',  0,  1);
+
 // ─── Start ────────────────────────────────────────────────────
 
-// Build level select dropdown and kick off the game
+// Kick everything off by loading the first level (index 0)
 buildLevelSelect();
 loadLevel(0);

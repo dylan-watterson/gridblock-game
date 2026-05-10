@@ -19,7 +19,10 @@
       time: <span id="timer">0.000s</span>
     </div>
 
-    <canvas id="canvas" width="500" height="500" tabindex="0"></canvas>
+    <!-- Canvas wrapped so we can scale it on small screens -->
+    <div id="canvas-wrap">
+      <canvas id="canvas" width="500" height="500" tabindex="0"></canvas>
+    </div>
 
     <div id="msg">use arrow keys or WASD to move</div>
 
@@ -55,6 +58,21 @@
       <button onclick="restartGame()">play again</button>
     </div>
   </div>
+
+  <script>
+    // Scale the canvas to fit the screen without distorting the drawing context
+    function scaleCanvas() {
+      const wrap = document.getElementById('canvas-wrap');
+      const canvas = document.getElementById('canvas');
+      const available = wrap.clientWidth;
+      const scale = Math.min(1, available / 500);
+      canvas.style.transform = `scale(${scale})`;
+      canvas.style.transformOrigin = 'top left';
+      wrap.style.height = (500 * scale) + 'px';
+    }
+    window.addEventListener('resize', scaleCanvas);
+    window.addEventListener('load', scaleCanvas);
+  </script>
 
   <script src="levels.js"></script>
   <script src="game.js"></script>

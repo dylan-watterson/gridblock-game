@@ -116,20 +116,22 @@
   }
 
   select {
-    font-family: monospace;
-    font-size: 12px;
-    background: #111;
-    border: 1px solid #444;
-    color: #e0dfd8;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-    font-size: 11px;
-    color: #444;
-    text-align: center;
-    line-height: 1.8;
-  }
+  font-family: monospace;
+  font-size: 12px;
+  background: #111;
+  border: 1px solid #444;
+  color: #e0dfd8;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#instructions {
+  font-size: 11px;
+  color: #444;
+  text-align: center;
+  line-height: 1.8;
+}
 </style>
 </head>
 <body>
@@ -184,6 +186,14 @@
       <option value="funnel">funnel</option>
       <option value="islands">islands</option>
       <option value="gauntlet">gauntlet</option>
+      <option value="snake">snake</option>
+      <option value="fortress">fortress</option>
+      <option value="rivers">rivers</option>
+      <option value="honeycomb">honeycomb</option>
+      <option value="crosshatch">cross hatch</option>
+      <option value="pinball">pinball</option>
+      <option value="border">border</option>
+      <option value="zones">zones</option>
     </select>
     <input type="range" id="gen-density" min="1" max="9" value="4" style="width:80px;">
     <span id="gen-density-out" style="font-size:11px;color:#888;">density: 4</span>
@@ -574,6 +584,14 @@ function runGenerator() {
   if (type === 'funnel')      genFunnel(density);
   if (type === 'islands')     genIslands(density);
   if (type === 'gauntlet')    genGauntlet(density);
+  if (type === 'snake')       genSnake(density);
+  if (type === 'fortress')    genFortress(density);
+  if (type === 'rivers')      genRivers(density);
+  if (type === 'honeycomb')   genHoneycomb(density);
+  if (type === 'crosshatch')  genCrosshatch(density);
+  if (type === 'pinball')     genPinball(density);
+  if (type === 'border')      genBorder(density);
+  if (type === 'zones')       genZones(density);
 
   draw();
 }
@@ -910,6 +928,215 @@ function genGauntlet(density) {
       : rand(Math.floor(GRID/2), GRID - gapSize);       // right side
     for (let x = 0; x < GRID; x++) {
       if (x < gapX || x >= gapX + gapSize) addObstacle(x, y);
+    }
+  }
+}
+
+// ── Snake — one long winding corridor across the grid ───────────
+function genSnake(density) {
+  // fill everything
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      addObstacle(x, y);
+
+  const corridorWidth = Math.max(1, 4 - Math.floor(density / 3));
+  const segmentHeight = rand(6, 12);
+  let goingRight = true;
+  let y = 2;
+
+  while (y < GRID - corridorWidth) {
+    // carve horizontal corridor
+    const endY = Math.min(y + corridorWidth, GRID);
+    for (let cy = y; cy < endY; cy++)
+      for (let x = 0; x < GRID; x++)
+        obstacles.delete(`${x},${cy}`);
+
+    y += segmentHeight;
+    if (y >= GRID - corridorWidth) break;
+
+    // carve vertical connector on alternating sides
+    const connX = goingRight ? GRID - corridorWidth : 0;
+    for (let cx = connX; cx < connX + corridorWidth; cx++)
+      for (let cy = y - segmentHeight + corridorWidth; cy < y + corridorWidth; cy++)
+        obstacles.delete(`${cx},${cy}`);
+
+    goingRight = !goingRight;
+  }
+}
+
+// ── Fortress — outer walls with gated entrances ──────────────────
+function genFortress(density) {
+  const gateSize = Math.max(2, 6 - Math.floor(density / 2));
+  const wallThickness = rand(1, 3);
+
+  // outer walls with gates on each side
+  for (let t = 0; t < wallThickness; t++) {
+    const gateH = Math.floor(GRID / 2) - Math.floor(gateSize / 2);
+    const gateV = Math.floor(GRID / 2) - Math.floor(gateSize / 2);
+
+    for (let x = 0; x < GRID; x++) {
+      // top and bottom walls with gate in middle
+      if (x < gateH || x >= gateH + gateSize) {
+        addObstacle(x, t);
+        addObstacle(x, GRID - 1 - t);
+      }
+    }
+    for (let y = 0; y < GRID; y++) {
+      // left and right walls with gate in middle
+      if (y < gateV || y >= gateV + gateSize) {
+        addObstacle(t, y);
+        addObstacle(GRID - 1 - t, y);
+      }
+    }
+  }
+
+  // inner obstacles — scatter inside the fortress
+  const innerChance = density * 0.025;
+  for (let x = wallThickness + 2; x < GRID - wallThickness - 2; x++)
+    for (let y = wallThickness + 2; y < GRID - wallThickness - 2; y++)
+      if (Math.random() < innerChance) addObstacle(x, y);
+}
+
+// ── Rivers — organic winding horizontal barriers ─────────────────
+function genRivers(density) {
+  const riverCount = Math.floor(density / 2) + 1; // 1–5 rivers
+  const riverSpacing = Math.floor(GRID / (riverCount + 1));
+
+  for (let r = 1; r <= riverCount; r++) {
+    const baseY = r * riverSpacing;
+    const gapSize = rand(3, 7);
+    let gapX = rand(2, GRID - gapSize - 2);
+    let currentY = baseY;
+    const width = rand(1, 3); // river thickness
+
+    // winding river — drifts slightly as it goes across
+    for (let x = 0; x < GRID; x++) {
+      // occasionally drift the river up or down
+      if (x % 5 === 0) currentY += rand(-1, 1);
+      currentY = Math.max(2, Math.min(GRID - 3, currentY));
+
+      // leave gap
+      if (x < gapX || x >= gapX + gapSize) {
+        for (let w = 0; w < width; w++)
+          addObstacle(x, currentY + w);
+      }
+    }
+  }
+}
+
+// ── Honeycomb — hexagonal-ish pattern of obstacles ───────────────
+function genHoneycomb(density) {
+  const size = Math.max(2, 6 - Math.floor(density / 2)); // cell size
+  for (let x = 0; x < GRID; x++) {
+    for (let y = 0; y < GRID; y++) {
+      const col = Math.floor(x / size);
+      const row = Math.floor(y / size);
+      const offsetX = x % size;
+      const offsetY = y % size;
+      const shifted = col % 2 === 0 ? 0 : Math.floor(size / 2);
+      const adjustedY = (y + shifted) % size;
+      // draw walls between cells
+      if (offsetX === 0 || adjustedY === 0) addObstacle(x, y);
+    }
+  }
+}
+
+// ── Cross hatch — intersecting lines with gaps ───────────────────
+function genCrosshatch(density) {
+  const spacing = Math.max(3, 10 - density);
+  const gapSize = rand(2, 5);
+
+  for (let x = 0; x < GRID; x += spacing) {
+    const gapY = rand(2, GRID - gapSize - 2);
+    for (let y = 0; y < GRID; y++) {
+      if (y < gapY || y >= gapY + gapSize) addObstacle(x, y);
+    }
+  }
+
+  for (let y = 0; y < GRID; y += spacing) {
+    const gapX = rand(2, GRID - gapSize - 2);
+    for (let x = 0; x < GRID; x++) {
+      if (x < gapX || x >= gapX + gapSize) addObstacle(x, y);
+    }
+  }
+}
+
+// ── Pinball — scattered diagonal bumpers ─────────────────────────
+function genPinball(density) {
+  const bumperCount = density * 3 + 4; // 7–31 bumpers
+  const bumperSize = rand(3, 7);
+
+  for (let i = 0; i < bumperCount; i++) {
+    const x = rand(3, GRID - bumperSize - 3);
+    const y = rand(3, GRID - bumperSize - 3);
+    const dir = Math.random() > 0.5 ? 1 : -1; // diagonal direction
+
+    // draw a short diagonal line as a bumper
+    for (let d = 0; d < bumperSize; d++) {
+      addObstacle(x + d, y + d * dir);
+    }
+  }
+}
+
+// ── Border — thick outer walls with internal obstacles ───────────
+function genBorder(density) {
+  const borderSize = Math.floor(density / 2) + 1; // 1–5 cell border
+
+  // draw thick border
+  for (let b = 0; b < borderSize; b++) {
+    for (let x = b; x < GRID - b; x++) {
+      addObstacle(x, b);
+      addObstacle(x, GRID - 1 - b);
+    }
+    for (let y = b; y < GRID - b; y++) {
+      addObstacle(b, y);
+      addObstacle(GRID - 1 - b, y);
+    }
+  }
+
+  // add internal obstacles
+  const innerChance = (density - 1) * 0.02;
+  for (let x = borderSize + 1; x < GRID - borderSize - 1; x++)
+    for (let y = borderSize + 1; y < GRID - borderSize - 1; y++)
+      if (Math.random() < innerChance) addObstacle(x, y);
+}
+
+// ── Zones — grid divided into distinct sections ──────────────────
+function genZones(density) {
+  const zoneSize = Math.floor(GRID / 3); // 3x3 grid of zones
+  const gapSize = rand(2, 5);
+
+  // draw zone dividers with gaps
+  for (let z = 1; z <= 2; z++) {
+    const divX = z * zoneSize;
+    const divY = z * zoneSize;
+    const gapX = rand(1, zoneSize - gapSize - 1);
+    const gapY = rand(1, zoneSize - gapSize - 1);
+
+    // vertical divider
+    for (let y = 0; y < GRID; y++) {
+      const zoneRow = Math.floor(y / zoneSize);
+      const localY = y % zoneSize;
+      if (localY < gapX || localY >= gapX + gapSize)
+        addObstacle(divX, y);
+    }
+
+    // horizontal divider
+    for (let x = 0; x < GRID; x++) {
+      const zoneCol = Math.floor(x / zoneSize);
+      const localX = x % zoneSize;
+      if (localX < gapY || localX >= gapY + gapSize)
+        addObstacle(x, divY);
+    }
+  }
+
+  // fill each zone with different density obstacles
+  for (let zx = 0; zx < 3; zx++) {
+    for (let zy = 0; zy < 3; zy++) {
+      const zoneDensity = Math.random() * density * 0.05;
+      for (let x = zx * zoneSize + 1; x < (zx + 1) * zoneSize - 1; x++)
+        for (let y = zy * zoneSize + 1; y < (zy + 1) * zoneSize - 1; y++)
+          if (Math.random() < zoneDensity) addObstacle(x, y);
     }
   }
 }

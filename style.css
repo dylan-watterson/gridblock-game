@@ -9,7 +9,7 @@ body {
   font-family: monospace;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
 }
 
@@ -17,13 +17,17 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 2rem;
+  gap: 12px;
+  padding: 1rem;
+  width: 100%;
+  max-width: 520px;
 }
 
 #stats {
   font-size: 13px;
   color: #888;
+  text-align: center;
+  width: 100%;
 }
 
 #stats span {
@@ -31,20 +35,28 @@ body {
   font-weight: 600;
 }
 
+/* Canvas scales to fit screen width on mobile */
 #canvas {
   image-rendering: pixelated;
   border: 2px solid #aaa;
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  display: block;
 }
 
 #msg {
   font-size: 13px;
   color: #888;
   height: 18px;
+  text-align: center;
 }
 
 #buttons {
   display: flex;
   gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 button {
@@ -59,6 +71,52 @@ button {
 
 button:hover {
   background: #e8e7e2;
+}
+
+/* ─── D-pad — touch devices only ────────────────────────────── */
+
+#dpad {
+  display: none;
+}
+
+.dpad-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.dbtn {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dbtn:active {
+  background: #e0dfd8;
+}
+
+.dbtn.empty {
+  visibility: hidden;
+}
+
+/* Show d-pad only on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  #dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
 }
 
 /* ─── Score screen ───────────────────────────────────────────── */
@@ -83,6 +141,7 @@ button:hover {
   flex-direction: column;
   gap: 12px;
   min-width: 280px;
+  max-width: 90vw;
 }
 
 #score-title {
@@ -141,50 +200,4 @@ button:hover {
 
 #score-screen button:hover {
   background: #e8e7e2;
-}
-
-/* ─── D-pad — touch devices only ────────────────────────────── */
-
-#dpad {
-  display: none; /* hidden by default on desktop */
-}
-
-.dpad-row {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-}
-
-.dbtn {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.dbtn:active {
-  background: #e0dfd8;
-}
-
-.dbtn.empty {
-  visibility: hidden;
-}
-
-/* Show d-pad only on touch screens */
-@media (hover: none) and (pointer: coarse) {
-  #dpad {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    margin: 4px 0;
-  }
 }

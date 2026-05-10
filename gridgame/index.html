@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="game-wrap">
+    <div id="stats">
+      level: <span id="level">1</span>
+      &nbsp;&nbsp;
+      moves: <span id="moves">0</span>
+      &nbsp;&nbsp;
+      total: <span id="total">0</span>
+      &nbsp;&nbsp;
+      time: <span id="timer">0.000s</span>
+    </div>
+
+    <canvas id="canvas" width="500" height="500" tabindex="0"></canvas>
+
+    <div id="msg">use arrow keys or WASD to move</div>
+
+    <!-- D-pad — touch devices only, hidden on desktop via CSS -->
+    <div id="dpad">
+      <div class="dpad-row">
+        <div class="dbtn" id="btn-up">▲</div>
+      </div>
+      <div class="dpad-row">
+        <div class="dbtn" id="btn-left">◀</div>
+        <div class="dbtn empty"></div>
+        <div class="dbtn" id="btn-right">▶</div>
+      </div>
+      <div class="dpad-row">
+        <div class="dbtn" id="btn-down">▼</div>
+      </div>
+    </div>
+
+    <div id="buttons">
+      <button onclick="restartGame()">restart game</button>
+      <button onclick="nextLevel()">next level</button>
+      <!-- DEV ONLY — remove before shipping -->
+      <select id="level-select" onchange="jumpToLevel(this.value)">
+      </select>
+    </div>
+  </div>
+
+  <!-- Score screen — hidden until game complete -->
+  <div id="score-screen" style="display:none;">
+    <div id="score-box">
+      <div id="score-title">game complete</div>
+      <div class="score-row">moves <span id="final-moves">0</span></div>
+      <div class="score-row">time <span id="final-time">0.000s</span></div>
+      <div class="score-row">time penalty <span id="final-penalty">0</span></div>
+      <div class="score-divider"></div>
+      <div class="score-row score-total">score <span id="final-score">0</span></div>
+      <div id="score-note">lower is better</div>
+      <button onclick="restartGame()">play again</button>
+    </div>
+  </div>
+
+  <script src="levels.js"></script>
+  <script src="game.js"></script>
+
+</body>
+</html>

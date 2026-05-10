@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Level Editor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1a18;
+    color: #e0dfd8;
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    gap: 16px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #888;
+  }
+
+  #toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tool-btn {
+    font-family: monospace;
+    font-size: 12px;
+    padding: 6px 14px;
+    border: 1px solid #444;
+    background: transparent;
+    color: #e0dfd8;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+  .tool-btn:hover { background: #2e2e2b; }
+  .tool-btn.active { background: #7F77DD; border-color: #7F77DD; color: #fff; }
+  .tool-btn.danger { border-color: #c0392b; color: #e74c3c; }
+  .tool-btn.danger:hover { background: #2e1a1a; }
+  .tool-btn.action { border-color: #1D9E75; color: #1D9E75; }
+  .tool-btn.action:hover { background: #0a2e22; }
+
+  #mode-label {
+    font-size: 11px;
+    color: #666;
+    padding: 6px 0;
+  }
+
+  #canvas-wrap {
+    position: relative;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  #output-wrap {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  #output-label {
+    font-size: 11px;
+    color: #666;
+    margin-bottom: 6px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  textarea {
+    width: 100%;
+    height: 180px;
+    background: #111;
+    border: 1px solid #333;
+    color: #5DCAA5;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 4px;
+    resize: vertical;
+  }
+
+  #stats-bar {
+    font-size: 11px;
+    color: #555;
+    display: flex;
+    gap: 20px;
+  }
+  #stats-bar span { color: #888; }
+
+  #gen-wrap {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  #gen-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+
+  select {
+    font-family: monospace;
+    font-size: 12px;
+    background: #111;
+    border: 1px solid #444;
+    color: #e0dfd8;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+    font-size: 11px;
+    color: #444;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<h1>grid game — level editor</h1>
+
+<div id="toolbar">
+  <button class="tool-btn active" id="btn-obstacle" onclick="setMode('obstacle')">obstacle</button>
+  <button class="tool-btn" id="btn-line" onclick="setMode('line')">line</button>
+  <button class="tool-btn" id="btn-select" onclick="setMode('select')">select</button>
+  <button class="tool-btn" id="btn-target" onclick="setMode('target')">target</button>
+  <button class="tool-btn" id="btn-start" onclick="setMode('start')">start point</button>
+  <button class="tool-btn" id="btn-erase" onclick="setMode('erase')">erase</button>
+  <button class="tool-btn danger" onclick="clearAll()">clear all</button>
+  <button class="tool-btn action" onclick="generateCode()">generate code ↓</button>
+</div>
+
+<div id="mode-label">mode: <span id="current-mode">obstacle</span> &nbsp;|&nbsp; left click to draw &nbsp;|&nbsp; line = click point 1, click point 2</div>
+
+<div id="canvas-wrap">
+  <canvas id="canvas" width="500" height="500"></canvas>
+</div>
+
+<div id="stats-bar">
+  obstacles: <span id="obs-count">0</span>
+  &nbsp;&nbsp;
+  start: <span id="start-pos">0, 0</span>
+  &nbsp;&nbsp;
+  target: <span id="target-pos">none</span>
+</div>
+
+<div id="output-wrap">
+  <div id="output-label">generated code</div>
+  <textarea id="output" readonly placeholder="click 'generate code' to output level javascript..."></textarea>
+</div>
+
+<div id="gen-wrap">
+  <div id="output-label">random generator</div>
+  <div id="gen-controls">
+    <select id="gen-type">
+      <option value="scatter">scatter</option>
+      <option value="walls">random walls</option>
+      <option value="maze">maze</option>
+      <option value="rooms">rooms</option>
+      <option value="labyrinth">labyrinth</option>
+      <option value="caves">caves</option>
+      <option value="pillars">pillars</option>
+      <option value="comb">comb</option>
+      <option value="diagonal">diagonal stripes</option>
+      <option value="checkerboard">checkerboard</option>
+      <option value="symmetry">symmetry</option>
+      <option value="funnel">funnel</option>
+      <option value="islands">islands</option>
+      <option value="gauntlet">gauntlet</option>
+    </select>
+    <input type="range" id="gen-density" min="1" max="9" value="4" style="width:80px;">
+    <span id="gen-density-out" style="font-size:11px;color:#888;">density: 4</span>
+    <button class="tool-btn" onclick="runGenerator()">generate ↺</button>
+    <button class="tool-btn" style="color:#888;font-size:11px;" onclick="runGenerator()">re-roll</button>
+  </div>
+</div>
+
+<div id="instructions">
+  obstacle/erase: click and drag &nbsp;|&nbsp; line: click point 1, click point 2<br>
+  select: drag to select region → press C to copy → click to paste (repeat) → Esc to cancel
+</div>
+
+<script>
+const GRID = 50;
+const CELL = 10;
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let obstacles = new Set(); // stored as "x,y" strings
+let target = null;         // {x, y}
+let start = { x: 0, y: 0 }; // {x, y} — defaults to 0,0
+let mode = 'obstacle';
+let isMouseDown = false;
+let lastCell = null;
+
+// line tool state
+let lineStart = null;
+let linePreview = new Set();
+
+// select/copy/paste state
+let selectStart = null;    // cell where drag started
+let selectEnd = null;      // cell where drag ended
+let selection = null;      // { x1, y1, x2, y2 } bounding box
+let clipboard = [];        // array of {x, y} relative offsets
+let pastePreview = [];     // paste preview cells in absolute coords
+let isPasting = false;     // true after copy, waiting for paste click
+
+// ─── Mode ─────────────────────────────────────────────────────
+
+function setMode(m) {
+  mode = m;
+  lineStart = null;
+  linePreview.clear();
+  selectStart = null;
+  selectEnd = null;
+  selection = null;
+  isPasting = false;
+  pastePreview = [];
+  document.getElementById('current-mode').textContent = m;
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + m).classList.add('active');
+  draw();
+}
+
+// ─── Drawing ──────────────────────────────────────────────────
+
+function draw() {
+  ctx.fillStyle = '#1a1a18';
+  ctx.fillRect(0, 0, 500, 500);
+
+  for (let x = 0; x < GRID; x++) {
+    for (let y = 0; y < GRID; y++) {
+      ctx.fillStyle = '#2a2a27';
+      ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 1, CELL - 1);
+    }
+  }
+
+  // obstacles
+  obstacles.forEach(key => {
+    const [x, y] = key.split(',').map(Number);
+    ctx.fillStyle = '#444441';
+    ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 1, CELL - 1);
+  });
+
+  // paste preview
+  if (isPasting && pastePreview.length) {
+    pastePreview.forEach(c => {
+      ctx.fillStyle = '#5DCAA5';
+      ctx.globalAlpha = 0.5;
+      ctx.fillRect(c.x * CELL + 1, c.y * CELL + 1, CELL - 1, CELL - 1);
+      ctx.globalAlpha = 1.0;
+    });
+  }
+
+  // selection rectangle
+  if (selection) {
+    const sx = selection.x1 * CELL;
+    const sy = selection.y1 * CELL;
+    const sw = (selection.x2 - selection.x1 + 1) * CELL;
+    const sh = (selection.y2 - selection.y1 + 1) * CELL;
+    ctx.strokeStyle = '#AFA9EC';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(sx + 0.5, sy + 0.5, sw, sh);
+    ctx.setLineDash([]);
+  }
+  linePreview.forEach(key => {
+    const [x, y] = key.split(',').map(Number);
+    ctx.fillStyle = '#7F77DD';
+    ctx.globalAlpha = 0.5;
+    ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 1, CELL - 1);
+    ctx.globalAlpha = 1.0;
+  });
+
+  // line start point indicator
+  if (lineStart) {
+    ctx.fillStyle = '#AFA9EC';
+    ctx.fillRect(lineStart.x * CELL + 1, lineStart.y * CELL + 1, CELL - 1, CELL - 1);
+  }
+
+  // target
+  if (target) {
+    ctx.fillStyle = '#085041';
+    ctx.fillRect(target.x * CELL + 1, target.y * CELL + 1, CELL - 1, CELL - 1);
+    ctx.fillStyle = '#1D9E75';
+    ctx.fillRect(target.x * CELL + 3, target.y * CELL + 3, CELL - 5, CELL - 5);
+  }
+
+  // start point (purple square)
+  ctx.fillStyle = '#3a3570';
+  ctx.fillRect(start.x * CELL + 1, start.y * CELL + 1, CELL - 1, CELL - 1);
+  ctx.fillStyle = '#7F77DD';
+  ctx.fillRect(start.x * CELL + 3, start.y * CELL + 3, CELL - 5, CELL - 5);
+
+  updateStats();
+}
+
+// ─── Select / Copy / Paste ────────────────────────────────────
+
+function getSelection(a, b) {
+  return {
+    x1: Math.min(a.x, b.x), y1: Math.min(a.y, b.y),
+    x2: Math.max(a.x, b.x), y2: Math.max(a.y, b.y)
+  };
+}
+
+function copySelection() {
+  if (!selection) return;
+  clipboard = [];
+  obstacles.forEach(key => {
+    const [x, y] = key.split(',').map(Number);
+    if (x >= selection.x1 && x <= selection.x2 && y >= selection.y1 && y <= selection.y2) {
+      clipboard.push({ x: x - selection.x1, y: y - selection.y1 });
+    }
+  });
+  if (clipboard.length > 0) {
+    isPasting = true;
+    document.getElementById('current-mode').textContent = 'select — click to paste';
+  }
+}
+
+function updatePastePreview(cell) {
+  if (!cell || !isPasting) return;
+  pastePreview = clipboard.map(c => ({ x: c.x + cell.x, y: c.y + cell.y }))
+    .filter(c => c.x >= 0 && c.x < GRID && c.y >= 0 && c.y < GRID);
+}
+
+function commitPaste(cell) {
+  if (!cell || !isPasting) return;
+  pastePreview.forEach(c => obstacles.add(`${c.x},${c.y}`));
+  // keep isPasting true so you can stamp multiple times
+}
+
+// ─── Line Tool ────────────────────────────────────────────────
+
+// Get all cells between two points (horizontal, vertical, or diagonal)
+function getCellsBetween(a, b) {
+  const cells = [];
+  const dx = Math.sign(b.x - a.x);
+  const dy = Math.sign(b.y - a.y);
+  const steps = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+  for (let i = 0; i <= steps; i++) {
+    cells.push({ x: a.x + dx * i, y: a.y + dy * i });
+  }
+  return cells;
+}
+
+// ─── Interaction ──────────────────────────────────────────────
+
+function getCellFromEvent(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = Math.floor((e.clientX - rect.left) * scaleX / CELL);
+  const cy = Math.floor((e.clientY - rect.top) * scaleY / CELL);
+  if (cx < 0 || cx >= GRID || cy < 0 || cy >= GRID) return null;
+  return { x: cx, y: cy };
+}
+
+function applyMode(cell) {
+  if (!cell) return;
+  const key = `${cell.x},${cell.y}`;
+
+  if (mode === 'obstacle') {
+    obstacles.add(key);
+    if (target && target.x === cell.x && target.y === cell.y) target = null;
+  } else if (mode === 'erase') {
+    obstacles.delete(key);
+    if (target && target.x === cell.x && target.y === cell.y) target = null;
+  } else if (mode === 'target') {
+    target = cell;
+    obstacles.delete(key);
+  } else if (mode === 'start') {
+    start = cell;
+    obstacles.delete(key);
+    if (target && target.x === cell.x && target.y === cell.y) target = null;
+  }
+
+  draw();
+}
+
+canvas.addEventListener('mousedown', e => {
+  const cell = getCellFromEvent(e);
+  if (!cell) return;
+
+  if (mode === 'line') {
+    if (!lineStart) {
+      lineStart = cell;
+      linePreview.clear();
+    } else {
+      getCellsBetween(lineStart, cell).forEach(c => obstacles.add(`${c.x},${c.y}`));
+      lineStart = null;
+      linePreview.clear();
+    }
+    draw();
+    return;
+  }
+
+  if (mode === 'select') {
+    if (isPasting) {
+      // stamp the paste
+      commitPaste(cell);
+      draw();
+      return;
+    }
+    // start a new selection drag
+    selectStart = cell;
+    selectEnd = cell;
+    selection = getSelection(cell, cell);
+    isMouseDown = true;
+    draw();
+    return;
+  }
+
+  isMouseDown = true;
+  lastCell = cell;
+  applyMode(cell);
+});
+
+canvas.addEventListener('mousemove', e => {
+  const cell = getCellFromEvent(e);
+
+  if (mode === 'line' && lineStart && cell) {
+    linePreview.clear();
+    getCellsBetween(lineStart, cell).forEach(c => linePreview.add(`${c.x},${c.y}`));
+    draw();
+    return;
+  }
+
+  if (mode === 'select') {
+    if (isPasting && cell) {
+      updatePastePreview(cell);
+      draw();
+      return;
+    }
+    if (isMouseDown && cell) {
+      selectEnd = cell;
+      selection = getSelection(selectStart, selectEnd);
+      draw();
+      return;
+    }
+    return;
+  }
+
+  if (!isMouseDown) return;
+  if (!cell || (lastCell && lastCell.x === cell.x && lastCell.y === cell.y)) return;
+  lastCell = cell;
+  applyMode(cell);
+});
+
+canvas.addEventListener('mouseup', e => {
+  if (mode === 'select' && isMouseDown) {
+    const cell = getCellFromEvent(e);
+    if (cell) { selectEnd = cell; selection = getSelection(selectStart, selectEnd); }
+    isMouseDown = false;
+    // show copy hint in mode label
+    if (!isPasting) document.getElementById('current-mode').textContent = 'select — press C to copy';
+    draw();
+    return;
+  }
+  isMouseDown = false;
+  lastCell = null;
+});
+
+canvas.addEventListener('mouseleave', () => { isMouseDown = false; lastCell = null; });
+
+// keyboard shortcut: C to copy, Escape to cancel paste
+document.addEventListener('keydown', e => {
+  if (e.key === 'c' || e.key === 'C') {
+    if (mode === 'select' && selection && !isPasting) copySelection();
+    draw();
+  }
+  if (e.key === 'Escape') {
+    isPasting = false;
+    pastePreview = [];
+    selection = null;
+    document.getElementById('current-mode').textContent = 'select';
+    draw();
+  }
+});
+
+// ─── Actions ──────────────────────────────────────────────────
+
+function clearAll() {
+  obstacles.clear();
+  target = null;
+  start = { x: 0, y: 0 };
+  lineStart = null;
+  linePreview.clear();
+  selection = null;
+  isPasting = false;
+  pastePreview = [];
+  draw();
+}
+
+function updateStats() {
+  document.getElementById('obs-count').textContent = obstacles.size;
+  document.getElementById('target-pos').textContent = target ? `${target.x}, ${target.y}` : 'none';
+  document.getElementById('start-pos').textContent = `${start.x}, ${start.y}`;
+}
+
+function generateCode() {
+  if (!target) {
+    document.getElementById('output').value = '// ⚠ no target set — click target mode and click a cell first';
+    return;
+  }
+
+  const sorted = [...obstacles]
+    .map(k => { const [x,y] = k.split(',').map(Number); return {x,y}; })
+    .sort((a,b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
+
+  const lines = sorted.map(o => `      { x: ${String(o.x).padStart(2)}, y: ${String(o.y).padStart(2)} }`);
+
+  const code = `  {
+    // Level X — describe your level here
+    playerStart: { x: ${start.x}, y: ${start.y} },
+    target: { x: ${target.x}, y: ${target.y} },
+    obstacles: [
+${lines.join(',\n')}
+    ]
+  },`;
+
+  document.getElementById('output').value = code;
+}
+
+// ─── Random Generators ────────────────────────────────────────
+
+document.getElementById('gen-density').oninput = function() {
+  document.getElementById('gen-density-out').textContent = 'density: ' + this.value;
+};
+
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+function addObstacle(x, y) {
+  if (x < 0 || x >= GRID || y < 0 || y >= GRID) return;
+  if (start && start.x === x && start.y === y) return;
+  if (target && target.x === x && target.y === y) return;
+  obstacles.add(`${x},${y}`);
+}
+
+function runGenerator() {
+  obstacles.clear();
+  const type = document.getElementById('gen-type').value;
+  const density = parseInt(document.getElementById('gen-density').value);
+
+  if (type === 'scatter')     genScatter(density);
+  if (type === 'walls')       genWalls(density);
+  if (type === 'maze')        genMaze(density);
+  if (type === 'rooms')       genRooms(density);
+  if (type === 'labyrinth')   genLabyrinth(density);
+  if (type === 'caves')       genCaves(density);
+  if (type === 'pillars')     genPillars(density);
+  if (type === 'comb')        genComb(density);
+  if (type === 'diagonal')    genDiagonal(density);
+  if (type === 'checkerboard') genCheckerboard(density);
+  if (type === 'symmetry')    genSymmetry(density);
+  if (type === 'funnel')      genFunnel(density);
+  if (type === 'islands')     genIslands(density);
+  if (type === 'gauntlet')    genGauntlet(density);
+
+  draw();
+}
+
+// ── Scatter — randomly sprinkle obstacles ──────────────────────
+function genScatter(density) {
+  const chance = density * 0.04; // density 1=4%, 9=36%
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      if (Math.random() < chance) addObstacle(x, y);
+}
+
+// ── Walls — random horizontal/vertical walls with gaps ─────────
+function genWalls(density) {
+  const count = density + 2; // 3–11 walls
+  for (let i = 0; i < count; i++) {
+    const isH = Math.random() > 0.5;
+    const gapSize = rand(2, 6);
+
+    if (isH) {
+      const y = rand(5, GRID - 5);
+      const gapX = rand(2, GRID - gapSize - 2);
+      for (let x = 0; x < GRID; x++) {
+        if (x < gapX || x >= gapX + gapSize) addObstacle(x, y);
+      }
+    } else {
+      const x = rand(5, GRID - 5);
+      const gapY = rand(2, GRID - gapSize - 2);
+      for (let y = 0; y < GRID; y++) {
+        if (y < gapY || y >= gapY + gapSize) addObstacle(x, y);
+      }
+    }
+  }
+}
+
+// ── Maze — recursive backtracker ───────────────────────────────
+function genMaze(density) {
+  // work on a smaller grid then scale up
+  const W = 12, H = 12;
+  const visited = Array.from({length: H}, () => new Array(W).fill(false));
+  const dirs = [{dx:1,dy:0},{dx:-1,dy:0},{dx:0,dy:1},{dx:0,dy:-1}];
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = rand(0, i);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function carve(x, y) {
+    visited[y][x] = true;
+    for (const {dx, dy} of shuffle([...dirs])) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H && !visited[ny][nx]) {
+        carve(nx, ny);
+      }
+    }
+  }
+
+  // fill everything, then carve paths
+  const cellW = Math.floor(GRID / W);
+  const cellH = Math.floor(GRID / H);
+
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      addObstacle(x, y);
+
+  carve(0, 0);
+
+  // carve passages based on visited (simplified — just clear cells in visited pattern)
+  visited.forEach((row, my) => {
+    row.forEach((v, mx) => {
+      const gx = mx * cellW + 1;
+      const gy = my * cellH + 1;
+      for (let dx = 0; dx < cellW - 1; dx++)
+        for (let dy = 0; dy < cellH - 1; dy++) {
+          obstacles.delete(`${gx + dx},${gy + dy}`);
+        }
+    });
+  });
+
+  // extra passes to open corridors proportional to density
+  const passes = 10 - density;
+  for (let i = 0; i < passes * 20; i++) {
+    const x = rand(1, GRID - 2), y = rand(1, GRID - 2);
+    obstacles.delete(`${x},${y}`);
+  }
+}
+
+// ── Rooms — rectangular rooms connected by corridors ───────────
+function genRooms(density) {
+  const roomCount = density + 2; // 3–11 rooms
+  const rooms = [];
+
+  for (let i = 0; i < roomCount * 5; i++) {
+    if (rooms.length >= roomCount) break;
+    const w = rand(4, 10), h = rand(4, 10);
+    const x = rand(1, GRID - w - 1), y = rand(1, GRID - h - 1);
+
+    // check overlap
+    const overlaps = rooms.some(r =>
+      x < r.x + r.w + 2 && x + w + 2 > r.x &&
+      y < r.y + r.h + 2 && y + h + 2 > r.y
+    );
+    if (!overlaps) rooms.push({x, y, w, h});
+  }
+
+  // fill grid with obstacles
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      addObstacle(x, y);
+
+  // carve out rooms
+  rooms.forEach(r => {
+    for (let x = r.x; x < r.x + r.w; x++)
+      for (let y = r.y; y < r.y + r.h; y++)
+        obstacles.delete(`${x},${y}`);
+  });
+
+  // connect rooms with corridors
+  for (let i = 1; i < rooms.length; i++) {
+    const a = rooms[i - 1], b = rooms[i];
+    const ax = rand(a.x, a.x + a.w - 1), ay = rand(a.y, a.y + a.h - 1);
+    const bx = rand(b.x, b.x + b.w - 1), by = rand(b.y, b.y + b.h - 1);
+    // horizontal then vertical corridor
+    const minX = Math.min(ax, bx), maxX = Math.max(ax, bx);
+    const minY = Math.min(ay, by), maxY = Math.max(ay, by);
+    for (let x = minX; x <= maxX; x++) obstacles.delete(`${x},${ay}`);
+    for (let y = minY; y <= maxY; y++) obstacles.delete(`${bx},${y}`);
+  }
+}
+
+// ── Labyrinth — concentric rings with random gap positions ──────
+function genLabyrinth(density) {
+  const rings = 3 + Math.floor(density / 2); // 3–7 rings
+  const cx = 24, cy = 24;
+  for (let r = 1; r <= rings; r++) {
+    const radius = r * Math.floor(22 / rings);
+    // draw ring as a square border
+    const x1 = cx - radius, y1 = cy - radius;
+    const x2 = cx + radius, y2 = cy + radius;
+    // which side has the gap this ring
+    const side = rand(0, 3);
+    const gapSize = rand(2, 5);
+    for (let x = x1; x <= x2; x++) {
+      if (side === 0) { const gapX = rand(x1, x2 - gapSize); if (x >= gapX && x < gapX + gapSize) continue; }
+      addObstacle(x, y1);
+      addObstacle(x, y2);
+    }
+    for (let y = y1; y <= y2; y++) {
+      if (side === 1) { const gapY = rand(y1, y2 - gapSize); if (y >= gapY && y < gapY + gapSize) continue; }
+      addObstacle(x1, y);
+      addObstacle(x2, y);
+    }
+  }
+}
+
+// ── Caves — cellular automata for organic blob shapes ───────────
+function genCaves(density) {
+  const fillChance = 0.3 + density * 0.04;
+  let grid = Array.from({length: GRID}, () =>
+    Array.from({length: GRID}, () => Math.random() < fillChance)
+  );
+
+  // run cellular automata passes — alive cells with fewer than 4 neighbours die
+  const passes = 4;
+  for (let p = 0; p < passes; p++) {
+    const next = Array.from({length: GRID}, () => new Array(GRID).fill(false));
+    for (let x = 0; x < GRID; x++) {
+      for (let y = 0; y < GRID; y++) {
+        let neighbours = 0;
+        for (let dx = -1; dx <= 1; dx++)
+          for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= GRID || ny < 0 || ny >= GRID) neighbours++;
+            else if (grid[nx][ny]) neighbours++;
+          }
+        next[x][y] = neighbours >= 5 || (grid[x][y] && neighbours >= 4);
+      }
+    }
+    grid = next;
+  }
+
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      if (grid[x][y]) addObstacle(x, y);
+}
+
+// ── Pillars — grid of square pillars, randomised sizes ──────────
+function genPillars(density) {
+  const spacing = 10 - density; // denser = closer together
+  const size = rand(1, 3);
+  for (let x = spacing; x < GRID - spacing; x += spacing) {
+    for (let y = spacing; y < GRID - spacing; y += spacing) {
+      if (Math.random() < 0.15) continue; // occasionally skip a pillar
+      const ox = rand(-1, 1), oy = rand(-1, 1); // slight offset for variation
+      for (let dx = 0; dx < size; dx++)
+        for (let dy = 0; dy < size; dy++)
+          addObstacle(x + ox + dx, y + oy + dy);
+    }
+  }
+}
+
+// ── Comb — parallel walls alternating which end is open ─────────
+function genComb(density) {
+  const teeth = density + 2; // 3–11 teeth
+  const spacing = Math.floor(GRID / (teeth + 1));
+  const length = rand(20, 38);
+  const isH = Math.random() > 0.5;
+
+  for (let i = 1; i <= teeth; i++) {
+    const pos = i * spacing;
+    const openEnd = i % 2 === 0; // alternate which end is open
+    if (isH) {
+      const startY = openEnd ? GRID - length : 0;
+      const endY = openEnd ? GRID : length;
+      for (let y = startY; y < endY; y++) addObstacle(pos, y);
+    } else {
+      const startX = openEnd ? GRID - length : 0;
+      const endX = openEnd ? GRID : length;
+      for (let x = startX; x < endX; x++) addObstacle(x, pos);
+    }
+  }
+}
+
+// ── Diagonal stripes — bands of obstacles at 45 degrees ─────────
+function genDiagonal(density) {
+  const stripeWidth = 10 - density + 1;
+  const gap = rand(3, 7);
+  const period = stripeWidth + gap;
+  for (let x = 0; x < GRID; x++) {
+    for (let y = 0; y < GRID; y++) {
+      if ((x + y) % period < stripeWidth) addObstacle(x, y);
+    }
+  }
+}
+
+// ── Checkerboard — alternating blocks at varying scale ───────────
+function genCheckerboard(density) {
+  const scale = Math.max(1, 5 - Math.floor(density / 2)); // density affects block size
+  for (let x = 0; x < GRID; x++) {
+    for (let y = 0; y < GRID; y++) {
+      const bx = Math.floor(x / scale);
+      const by = Math.floor(y / scale);
+      if ((bx + by) % 2 === 0) addObstacle(x, y);
+    }
+  }
+}
+
+// ── Symmetry — random half mirrored horizontally ─────────────────
+function genSymmetry(density) {
+  const chance = density * 0.04;
+  const half = Math.floor(GRID / 2);
+  // generate left half
+  for (let x = 0; x < half; x++) {
+    for (let y = 0; y < GRID; y++) {
+      if (Math.random() < chance) {
+        addObstacle(x, y);
+        addObstacle(GRID - 1 - x, y); // mirror on right
+      }
+    }
+  }
+}
+
+// ── Funnel — wide open at top, narrows toward bottom ────────────
+function genFunnel(density) {
+  const narrowing = density * 0.06;
+  for (let y = 0; y < GRID; y++) {
+    const progress = y / GRID; // 0 at top, 1 at bottom
+    const wallWidth = Math.floor(progress * GRID * narrowing * 0.5);
+    for (let x = 0; x < wallWidth; x++) addObstacle(x, y);
+    for (let x = GRID - wallWidth; x < GRID; x++) addObstacle(x, y);
+  }
+  // add some random walls for routing interest
+  genWalls(Math.floor(density / 2));
+}
+
+// ── Islands — open clusters surrounded by walls ──────────────────
+function genIslands(density) {
+  // fill everything
+  for (let x = 0; x < GRID; x++)
+    for (let y = 0; y < GRID; y++)
+      addObstacle(x, y);
+
+  const islandCount = density + 2;
+  const islands = [];
+
+  for (let i = 0; i < islandCount * 4; i++) {
+    if (islands.length >= islandCount) break;
+    const w = rand(4, 12), h = rand(4, 12);
+    const x = rand(2, GRID - w - 2), y = rand(2, GRID - h - 2);
+    const overlaps = islands.some(isl =>
+      x < isl.x + isl.w + 3 && x + w + 3 > isl.x &&
+      y < isl.y + isl.h + 3 && y + h + 3 > isl.y
+    );
+    if (!overlaps) islands.push({x, y, w, h});
+  }
+
+  // carve islands
+  islands.forEach(isl => {
+    for (let x = isl.x; x < isl.x + isl.w; x++)
+      for (let y = isl.y; y < isl.y + isl.h; y++)
+        obstacles.delete(`${x},${y}`);
+  });
+
+  // carve narrow bridges between adjacent islands
+  for (let i = 1; i < islands.length; i++) {
+    const a = islands[i-1], b = islands[i];
+    const ax = Math.floor(a.x + a.w/2), ay = Math.floor(a.y + a.h/2);
+    const bx = Math.floor(b.x + b.w/2), by = Math.floor(b.y + b.h/2);
+    // 2-cell wide bridge
+    const minX = Math.min(ax, bx), maxX = Math.max(ax, bx);
+    const minY = Math.min(ay, by), maxY = Math.max(ay, by);
+    for (let x = minX; x <= maxX; x++) { obstacles.delete(`${x},${ay}`); obstacles.delete(`${x},${ay+1}`); }
+    for (let y = minY; y <= maxY; y++) { obstacles.delete(`${bx},${y}`); obstacles.delete(`${bx+1},${y}`); }
+  }
+}
+
+// ── Gauntlet — progressively tighter walls toward target ─────────
+function genGauntlet(density) {
+  const wallCount = density + 3; // 4–12 walls
+  const spacing = Math.floor(GRID / (wallCount + 1));
+
+  for (let i = 1; i <= wallCount; i++) {
+    const y = i * spacing;
+    const progress = i / wallCount; // 0 at top, 1 at bottom
+    // gap gets smaller as you go further down
+    const gapSize = Math.max(2, Math.floor(10 - progress * (density + 2)));
+    // alternate which side the gap is on
+    const gapX = i % 2 === 0
+      ? rand(0, Math.floor(GRID/2) - gapSize)           // left side
+      : rand(Math.floor(GRID/2), GRID - gapSize);       // right side
+    for (let x = 0; x < GRID; x++) {
+      if (x < gapX || x >= gapX + gapSize) addObstacle(x, y);
+    }
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+
+draw();
+</script>
+</body>
+</html>

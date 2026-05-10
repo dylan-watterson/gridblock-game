@@ -1,0 +1,190 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f5f4ef;
+  font-family: monospace;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+#game-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 2rem;
+}
+
+#stats {
+  font-size: 13px;
+  color: #888;
+}
+
+#stats span {
+  color: #111;
+  font-weight: 600;
+}
+
+#canvas {
+  image-rendering: pixelated;
+  border: 2px solid #aaa;
+}
+
+#msg {
+  font-size: 13px;
+  color: #888;
+  height: 18px;
+}
+
+#buttons {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  font-family: monospace;
+  font-size: 12px;
+  padding: 6px 16px;
+  cursor: pointer;
+  border: 1px solid #aaa;
+  background: transparent;
+  border-radius: 6px;
+}
+
+button:hover {
+  background: #e8e7e2;
+}
+
+/* ─── Score screen ───────────────────────────────────────────── */
+
+#score-screen {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+}
+
+#score-box {
+  background: #f5f4ef;
+  border: 2px solid #aaa;
+  border-radius: 8px;
+  padding: 2rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 280px;
+}
+
+#score-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin-bottom: 8px;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #555;
+}
+
+.score-row span {
+  color: #111;
+  font-weight: 600;
+}
+
+.score-total {
+  font-size: 18px;
+  color: #111;
+}
+
+.score-total span {
+  color: #7F77DD;
+  font-size: 22px;
+}
+
+.score-divider {
+  border-top: 1px solid #ddd;
+  margin: 4px 0;
+}
+
+#score-note {
+  font-size: 11px;
+  color: #aaa;
+  text-align: center;
+}
+
+#score-screen button {
+  margin-top: 8px;
+  font-family: monospace;
+  font-size: 13px;
+  padding: 8px 20px;
+  cursor: pointer;
+  border: 1px solid #aaa;
+  background: transparent;
+  border-radius: 6px;
+  align-self: center;
+}
+
+#score-screen button:hover {
+  background: #e8e7e2;
+}
+
+/* ─── D-pad — touch devices only ────────────────────────────── */
+
+#dpad {
+  display: none; /* hidden by default on desktop */
+}
+
+.dpad-row {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.dbtn {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border: 1px solid #aaa;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.dbtn:active {
+  background: #e0dfd8;
+}
+
+.dbtn.empty {
+  visibility: hidden;
+}
+
+/* Show d-pad only on touch screens */
+@media (hover: none) and (pointer: coarse) {
+  #dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin: 4px 0;
+  }
+}
